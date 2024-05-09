@@ -4,7 +4,7 @@
 ### Data Explain
 
 신규 상장주 데이터를 활용하여 상장 후 4개월 동안의 데이터를 사용했습니다. 데이터는 윈도우 크기를 4~12 사이로 설정하여 분할하였고, 이 데이터를 활용하여 향후 12개 기간의 데이터를 예측했습니다.
-데이터 구성에는 현재가, 시가, 고가, 저가, 거래량, 거래대금 등의 기본 요소가 포함되며, 공모가 대비 가격(현재가, 시가, 저가, 고가) 특성을 추가했습니다. 또한 이전에 리뷰한 time series clustering을 통해 각 시계열에 클러스터링 특성을 추가했습니다. 결과적으로 데이터 형태는 (12 seq len x 11 feature)이 됩니다.
+데이터 구성에는 현재가, 시가, 고가, 저가, 거래량, 거래대금 등의 기본 요소가 포함되며, 공모가 대비 가격(현재가, 시가, 저가, 고가) 특성을 추가했습니다. 또한 이전에 리뷰한 time series clustering(https://github.com/sangse/Stock-AI)을 통해 각 시계열에 클러스터링 특성을 추가했습니다. 결과적으로 데이터 형태는 (12 seq len x 11 feature)이 됩니다.
 
 ### Transformer Encoder Model
 모델은 Transformer의 인코더 블록을 활용하여 학습을 진행했습니다. 이전 리뷰에서는 LTSF(Long Term Time Series Forecasting) 예측에 사용되는 DLinear 모델을 사용해 예측을 시도했습니다. 그러나 보유한 데이터의 최대 길이가 12에 불과하여 트렌드와 계절성 등의 정보를 충분히 포착하기 어려웠습니다. 이에 따라 다양한 분야에서 널리 사용되고 있는 Transformer를 사용하였습니다. 
@@ -93,3 +93,51 @@ val_dataset = TensorDataset(X_val, y_val)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=64, shuffle=True)
 ```
+### Model Learning
+
+```python
+num_epochs = 300  # 학습 에폭 수
+num_samples = len(train_loader.dataset)  # 전체 훈련 데이터 수
+num_val_samples = len(val_loader.dataset)  # 전체 검증 데이터 수
+
+best_val_loss = float('inf')  # 가장 좋은 검증 손실을 저장하기 위한 변수 초기화
+
+for epoch in range(num_epochs):
+    model.train()  # 모델을 학습 모드로 설정
+    running_loss = 0.0
+
+    # 훈련 루프
+    for inputs, targets in train_loader:
+        optimizer.zero_grad()  # 그래디언트 초기화
+        outputs = model(inputs,targets,mode='eval')  # 모델을 통한 순전파
+        loss = criterion(outputs.squeeze(), targets[:,:,0])  # 손실 계산
+        loss.backward()  # 역전파 실행
+        optimizer.step()  # 매개변수 업데이트
+
+        running_loss += loss.item() * inputs.size(0)
+
+    train_loss = running_loss / num_samples
+
+    # 검증 루프
+    model.eval()  # 모델을 평가 모드로 설정
+    running_val_loss = 0.0
+    with torch.no_grad():  # 그래디언트 계산 비활성화
+        for inputs, targets in val_loader:
+            outputs = model(inputs,targets,mode='eval')
+            loss = criterion(outputs.squeeze(), targets[:,:,0])
+            running_val_loss += loss.item() * inputs.size(0)
+
+    val_loss = running_val_loss / num_val_samples
+    print(f'Epoch {epoch+1}  - Training Loss: {train_loss:.4f} - Validation Loss: {val_loss:.4f}')
+
+    # 검증 손실이 현재까지의 최소값보다 낮을 경우, 모델 상태 저장
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), f'/content/drive/MyDrive/best_model.pth')
+        print(f'New best model saved at epoch {epoch+1} with validation loss {val_loss:.4f}')
+```
+### Prediction Result
+아래의 그림은 모델을 학습 후 결과 입니다.
+<p align='center'>
+  <img src = 'https://github.com/sangse/Stock_AI_transformer/assets/145996429/e42c13d3-bbac-48bb-b649-8a21fd4131c2'>
+</p>
