@@ -6,7 +6,7 @@
 신규 상장주 데이터를 활용하여 상장 후 4개월 동안의 데이터를 사용했습니다. 데이터는 윈도우 크기를 4~12 사이로 설정하여 분할하였고, 이 데이터를 활용하여 향후 12개 기간의 데이터를 예측했습니다.
 데이터 구성에는 현재가, 시가, 고가, 저가, 거래량, 거래대금 등의 기본 요소가 포함되며, 공모가 대비 가격(현재가, 시가, 저가, 고가) 특성을 추가했습니다. 
 
-또한 이전에 리뷰한 time series clustering(https://github.com/sangse/Stock-AI)을 통해 각 시계열에 클러스터링 특성을 추가했습니다. 결과적으로 데이터 형태는 (12 seq len x 11 feature)이 됩니다.
+또한 이전에 리뷰한 time series clustering(https://github.com/sangse/Stock-AI) 을 통해 각 시계열에 클러스터링 특성을 추가했습니다. 결과적으로 데이터 형태는 (12 seq len x 11 feature)이 됩니다.
 
 ### Transformer Encoder Model
 모델은 Transformer의 인코더 블록을 활용하여 학습을 진행했습니다. 이전 리뷰에서는 LTSF(Long Term Time Series Forecasting) 예측에 사용되는 DLinear 모델을 사용해 예측을 시도했습니다. 그러나 보유한 데이터의 최대 길이가 12에 불과하여 트렌드와 계절성 등의 정보를 충분히 포착하기 어려웠습니다. 이에 따라 다양한 분야에서 널리 사용되고 있는 Transformer를 사용하였습니다. 
